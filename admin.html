@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 - 서울대 동문회</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-page">
+  <div class="admin-container">
+    <header class="admin-header">
+      <h1>관리자</h1>
+      <a href="index.html" class="back-link">← 메인으로</a>
+    </header>
+
+    <section class="admin-section">
+      <h2>장소 설정</h2>
+      <p class="section-desc">네이버에서 검색 가능한 주소를 입력하세요. (예: 서울 영등포구 여의대로 108)</p>
+      <form id="location-form">
+        <div class="form-group">
+          <label for="location-input">행사 장소 주소</label>
+          <input type="text" id="location-input" placeholder="서울 영등포구 여의대로 108" required>
+        </div>
+        <button type="submit" class="btn btn-primary">장소 저장</button>
+      </form>
+      <p id="location-status" class="status-msg"></p>
+    </section>
+
+    <section class="admin-section">
+      <h2>참석자 목록</h2>
+      <div class="attendees-table-wrap">
+        <table class="attendees-table">
+          <thead>
+            <tr>
+              <th>성함</th>
+              <th>학번</th>
+              <th>학과</th>
+              <th>참석</th>
+              <th>등록일</th>
+            </tr>
+          </thead>
+          <tbody id="attendees-body">
+            <tr><td colspan="5" class="loading">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
