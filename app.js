@@ -1,5 +1,4 @@
-// 서울대 동문회 참석 신청 - 메인 앱
-document.addEventListener('DOMContentLoaded', async () => {
+﻿document.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('attendanceForm');
   const submitBtn = document.getElementById('submitBtn');
   const btnText = submitBtn.querySelector('.btn-text');
@@ -8,13 +7,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const locationEl = document.getElementById('eventLocation');
   const mapLink = document.getElementById('mapLink');
   const locationMap = document.getElementById('locationMap');
+  const defaultLocation = '여의도';
 
-  if (!window.supabase) {
-    locationEl.textContent = '설정이 필요합니다. config.js를 확인해주세요.';
+  let sb;
+  try {
+    const cfgRes = await fetch('/api/public-config', { cache: 'no-store' });
+    if (!cfgRes.ok) throw new Error('public config load failed');
+    const cfg = await cfgRes.json();
+
+    if (!window.supabase?.createClient || !cfg?.url || !cfg?.anonKey) {
+      throw new Error('invalid public config');
+    }
+
+    sb = window.supabase.createClient(cfg.url, cfg.anonKey);
+  } catch (err) {
+    console.error(err);
+    setLocationFallback();
     return;
   }
 
-  // 이벤트 정보 로드 (장소)
   await loadEventInfo();
 
   form.addEventListener('submit', async (e) => {
@@ -39,12 +50,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      const { error } = await window.supabase
+      const { data: existingRows, error: checkError } = await sb
         .from('attendees')
-        .insert([formData]);
+        .select('id')
+        .eq('student_id', formData.student_id)
+        .eq('department', formData.department)
+        .eq('name', formData.name)
+        .limit(1);
 
+      if (checkError) throw checkError;
+
+      if (existingRows && existingRows.length > 0) {
+        alert('이미 신청하셨습니다.');
+        return;
+      }
+
+      const { error } = await sb.from('attendees').insert([formData]);
       if (error) throw error;
 
+      alert('반영되었습니다. 감사합니다!');
       form.style.display = 'none';
       successMessage.style.display = 'block';
       form.reset();
@@ -60,41 +84,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function loadEventInfo() {
     try {
-      const { data: settings } = await window.supabase
+      const { data: settings } = await sb
         .from('event_settings')
         .select('key, value')
         .eq('key', 'location');
 
-      const location = settings?.[0]?.value || '서울특별시 영등포구 여의도동 (상세 주소는 추후 안내)';
+      const location = settings?.[0]?.value?.trim();
+      if (!location) {
+        setLocationFallback();
+        return;
+      }
+
       locationEl.textContent = location;
 
-      // 지도 링크 (네이버 지도 검색)
-      if (location && !location.includes('추후 안내')) {
-        const encodedAddr = encodeURIComponent(location);
+      const encodedAddr = encodeURIComponent(location);
+      if (mapLink) {
         mapLink.href = `https://map.naver.com/v5/search/${encodedAddr}`;
         mapLink.style.display = 'inline-block';
+      }
 
-        // 지도 미리보기 (iframe)
-        if (locationMap) {
-          locationMap.innerHTML = `
-            <iframe
-              src="https://map.naver.com/v5/search/${encodedAddr}"
-              width="100%"
-              height="200"
-              frameborder="0"
-              allowfullscreen
-              style="border-radius: 12px; border: none; margin-top: 8px;"
-              loading="lazy"
-            ></iframe>
-          `;
-          locationMap.style.display = 'block';
-        }
-      } else if (mapLink) {
-        mapLink.style.display = 'none';
+      if (locationMap) {
+        locationMap.innerHTML = `
+          <iframe
+            src="https://map.naver.com/v5/search/${encodedAddr}"
+            width="100%"
+            height="200"
+            frameborder="0"
+            allowfullscreen
+            style="border-radius: 12px; border: none; margin-top: 8px;"
+            loading="lazy"
+          ></iframe>
+        `;
+        locationMap.style.display = 'block';
       }
     } catch (err) {
-      console.error('이벤트 정보 로드 실패:', err);
-      locationEl.textContent = '서울특별시 영등포구 여의도동 (상세 주소는 추후 안내)';
+      console.error('Failed to load event info:', err);
+      setLocationFallback();
+    }
+  }
+
+  function setLocationFallback() {
+    locationEl.textContent = defaultLocation;
+
+    if (mapLink) {
+      mapLink.style.display = 'none';
+      mapLink.removeAttribute('href');
+    }
+
+    if (locationMap) {
+      locationMap.style.display = 'none';
+      locationMap.innerHTML = '';
     }
   }
 });

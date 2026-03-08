@@ -60,9 +60,9 @@ body {
 }
 
 .logo-img {
-    height: 80px;
+    height: 118px;
     width: auto;
-    max-width: 280px;
+    max-width: 360px;
     object-fit: contain;
 }
 
@@ -485,8 +485,8 @@ body {
     }
 
     .logo-img {
-        height: 64px;
-        max-width: 240px;
+        height: 86px;
+        max-width: 280px;
     }
 
     .form {
