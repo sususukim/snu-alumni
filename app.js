@@ -18,23 +18,6 @@
     mapUrl: '',
   };
 
-  let sb;
-  try {
-    const cfgRes = await fetch('/api/public-config', { cache: 'no-store' });
-    if (!cfgRes.ok) throw new Error('public config load failed');
-    const cfg = await cfgRes.json();
-
-    if (!window.supabase?.createClient || !cfg?.url || !cfg?.anonKey) {
-      throw new Error('invalid public config');
-    }
-
-    sb = window.supabase.createClient(cfg.url, cfg.anonKey);
-  } catch (err) {
-    console.error(err);
-    applyEventSettings(defaults);
-    return;
-  }
-
   await loadEventInfo();
 
   form.addEventListener('submit', async (e) => {
@@ -59,25 +42,23 @@
     }
 
     try {
-      const { data: existingRows, error: checkError } = await sb
-        .from('attendees')
-        .select('id')
-        .eq('student_id', formData.student_id)
-        .eq('department', formData.department)
-        .eq('name', formData.name)
-        .limit(1);
+      const res = await fetch('/api/attendees-submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-      if (checkError) throw checkError;
-
-      if (existingRows && existingRows.length > 0) {
+      if (res.status === 409) {
         alert('이미 신청하셨습니다.');
         return;
       }
 
-      const { error } = await sb.from('attendees').insert([formData]);
-      if (error) throw error;
+      if (!res.ok) {
+        const payload = await safeJson(res);
+        throw new Error(payload?.error || '등록에 실패했습니다. 다시 시도해 주세요.');
+      }
 
-      alert('반영되었습니다. 감사합니다!');
+      alert('확인되었습니다! 감사합니다!');
       form.style.display = 'none';
       successMessage.style.display = 'block';
       form.reset();
@@ -93,14 +74,10 @@
 
   async function loadEventInfo() {
     try {
-      const { data, error } = await sb
-        .from('event_settings')
-        .select('event_title, event_datetime_text, place_name, naver_map_url')
-        .eq('id', 1)
-        .maybeSingle();
+      const res = await fetch('/api/event-settings', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load event settings');
 
-      if (error) throw error;
-
+      const data = await res.json();
       applyEventSettings({
         eventTitle: data?.event_title || defaults.eventTitle,
         eventDatetime: data?.event_datetime_text || defaults.eventDatetime,
@@ -151,4 +128,12 @@ function escapeHtmlAttr(value) {
     .replaceAll('"', '&quot;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
+}
+
+async function safeJson(res) {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
