@@ -60,9 +60,9 @@ body {
 }
 
 .logo-img {
-    height: 48px;
+    height: 80px;
     width: auto;
-    max-width: 180px;
+    max-width: 280px;
     object-fit: contain;
 }
 
@@ -482,6 +482,11 @@ body {
 @media (max-width: 380px) {
     .container {
         padding: 20px 16px 32px;
+    }
+
+    .logo-img {
+        height: 64px;
+        max-width: 240px;
     }
 
     .form {

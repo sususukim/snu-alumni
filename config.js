@@ -6,7 +6,7 @@
  */
 const SUPABASE_CONFIG = {
   url: 'https://cyliqqlceeotrhjjnebf.supabase.co',      // 예: https://xxxxx.supabase.co
-  anonKey: 'sb_publishable_zO7pv4Svk8tdT_uhN6EKWA_531P7TQm'
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5bGlxcWxjZWVvdHJoampuZWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjI5MDQsImV4cCI6MjA4NzkzODkwNH0.c_IMVxqrBYlb_KfwyOfCVni0OM_qpkjYqNrkJjoACNo'
 };
 
 // Supabase 클라이언트 초기화 (supabase-js CDN 로드 후 실행)
