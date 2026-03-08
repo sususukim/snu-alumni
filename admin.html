@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -13,18 +13,26 @@
   <div class="admin-container">
     <header class="admin-header">
       <h1>관리자</h1>
-      <a href="index.html" class="back-link">← 메인으로</a>
+      <a href="index.html" class="back-link">메인으로</a>
     </header>
 
     <section class="admin-section">
-      <h2>장소 설정</h2>
-      <p class="section-desc">네이버에서 검색 가능한 주소를 입력하세요. (예: 서울 영등포구 여의대로 108)</p>
+      <h2>행사 정보 설정</h2>
+      <p class="section-desc">event_settings(id=1)의 행사 일시, 장소, 네이버 지도 URL을 수정합니다.</p>
       <form id="location-form">
         <div class="form-group">
-          <label for="location-input">행사 장소 주소</label>
-          <input type="text" id="location-input" placeholder="서울 영등포구 여의대로 108" required>
+          <label for="datetime-input">행사 일시 텍스트</label>
+          <input type="text" id="datetime-input" placeholder="예: 2026년 5월 12일 18:00" required>
         </div>
-        <button type="submit" class="btn btn-primary">장소 저장</button>
+        <div class="form-group">
+          <label for="location-input">장소명</label>
+          <input type="text" id="location-input" placeholder="예: 여의도" required>
+        </div>
+        <div class="form-group">
+          <label for="map-url-input">네이버 지도 URL</label>
+          <input type="text" id="map-url-input" placeholder="https://map.naver.com/v5/search/...">
+        </div>
+        <button type="submit" class="btn btn-primary">설정 저장</button>
       </form>
       <p id="location-status" class="status-msg"></p>
     </section>

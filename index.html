@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -14,22 +14,21 @@
     <div class="container">
         <header class="header">
             <div class="logo">
-                <!-- 로고: 이미지 파일은 images/snu-logo.png 에 넣거나, 아래 src를 웹 주소로 바꾸세요 -->
                 <img src="images/snu-logo.png" alt="서울대학교" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <div class="logo-fallback">서울대학교</div>
             </div>
-            <h1>동문회 참석 신청</h1>
+            <h1 id="eventTitle">동문회 참석 신청</h1>
         </header>
 
         <main class="main">
             <section class="event-info">
                 <div class="info-card">
                     <span class="info-label">일시</span>
-                    <span class="info-value">2026년 5월 12일</span>
+                    <span class="info-value" id="eventDatetime">2026년 5월 12일</span>
                 </div>
                 <div class="info-card">
                     <span class="info-label">장소</span>
-                    <span class="info-value" id="eventLocation">여의도 (상세 주소는 곧 안내됩니다)</span>
+                    <span class="info-value" id="eventLocation">여의도</span>
                     <a href="#" id="mapLink" class="map-link" target="_blank" rel="noopener" style="display: none;">지도 보기</a>
                     <div id="locationMap" class="location-map" style="display: none;"></div>
                 </div>

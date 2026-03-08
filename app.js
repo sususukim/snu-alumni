@@ -4,10 +4,19 @@
   const btnText = submitBtn.querySelector('.btn-text');
   const btnLoading = submitBtn.querySelector('.btn-loading');
   const successMessage = document.getElementById('successMessage');
+
+  const titleEl = document.getElementById('eventTitle');
+  const datetimeEl = document.getElementById('eventDatetime');
   const locationEl = document.getElementById('eventLocation');
   const mapLink = document.getElementById('mapLink');
   const locationMap = document.getElementById('locationMap');
-  const defaultLocation = '여의도';
+
+  const defaults = {
+    eventTitle: '동문회 참석 신청',
+    eventDatetime: '2026년 5월 12일',
+    placeName: '여의도',
+    mapUrl: '',
+  };
 
   let sb;
   try {
@@ -22,7 +31,7 @@
     sb = window.supabase.createClient(cfg.url, cfg.anonKey);
   } catch (err) {
     console.error(err);
-    setLocationFallback();
+    applyEventSettings(defaults);
     return;
   }
 
@@ -84,56 +93,62 @@
 
   async function loadEventInfo() {
     try {
-      const { data: settings } = await sb
+      const { data, error } = await sb
         .from('event_settings')
-        .select('key, value')
-        .eq('key', 'location');
+        .select('event_title, event_datetime_text, place_name, naver_map_url')
+        .eq('id', 1)
+        .maybeSingle();
 
-      const location = settings?.[0]?.value?.trim();
-      if (!location) {
-        setLocationFallback();
-        return;
-      }
+      if (error) throw error;
 
-      locationEl.textContent = location;
-
-      const encodedAddr = encodeURIComponent(location);
-      if (mapLink) {
-        mapLink.href = `https://map.naver.com/v5/search/${encodedAddr}`;
-        mapLink.style.display = 'inline-block';
-      }
-
-      if (locationMap) {
-        locationMap.innerHTML = `
-          <iframe
-            src="https://map.naver.com/v5/search/${encodedAddr}"
-            width="100%"
-            height="200"
-            frameborder="0"
-            allowfullscreen
-            style="border-radius: 12px; border: none; margin-top: 8px;"
-            loading="lazy"
-          ></iframe>
-        `;
-        locationMap.style.display = 'block';
-      }
+      applyEventSettings({
+        eventTitle: data?.event_title || defaults.eventTitle,
+        eventDatetime: data?.event_datetime_text || defaults.eventDatetime,
+        placeName: data?.place_name || defaults.placeName,
+        mapUrl: data?.naver_map_url || '',
+      });
     } catch (err) {
       console.error('Failed to load event info:', err);
-      setLocationFallback();
+      applyEventSettings(defaults);
     }
   }
 
-  function setLocationFallback() {
-    locationEl.textContent = defaultLocation;
+  function applyEventSettings(settings) {
+    titleEl.textContent = settings.eventTitle;
+    datetimeEl.textContent = settings.eventDatetime;
+    locationEl.textContent = settings.placeName;
 
-    if (mapLink) {
+    const mapUrl = (settings.mapUrl || '').trim();
+    if (!mapUrl) {
       mapLink.style.display = 'none';
       mapLink.removeAttribute('href');
-    }
-
-    if (locationMap) {
       locationMap.style.display = 'none';
       locationMap.innerHTML = '';
+      return;
     }
+
+    mapLink.href = mapUrl;
+    mapLink.style.display = 'inline-block';
+
+    locationMap.innerHTML = `
+      <iframe
+        src="${escapeHtmlAttr(mapUrl)}"
+        width="100%"
+        height="200"
+        frameborder="0"
+        allowfullscreen
+        style="border-radius: 12px; border: none; margin-top: 8px;"
+        loading="lazy"
+      ></iframe>
+    `;
+    locationMap.style.display = 'block';
   }
 });
+
+function escapeHtmlAttr(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}

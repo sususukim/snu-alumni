@@ -1,9 +1,11 @@
 ﻿document.addEventListener('DOMContentLoaded', async () => {
   const adminSections = document.querySelectorAll('.admin-section');
   const attendeesBody = document.getElementById('attendees-body');
-  const locationForm = document.getElementById('location-form');
-  const locationInput = document.getElementById('location-input');
-  const locationStatus = document.getElementById('location-status');
+  const settingsForm = document.getElementById('location-form');
+  const datetimeInput = document.getElementById('datetime-input');
+  const placeInput = document.getElementById('location-input');
+  const mapUrlInput = document.getElementById('map-url-input');
+  const statusEl = document.getElementById('location-status');
 
   adminSections.forEach((section) => {
     section.style.display = 'none';
@@ -24,15 +26,27 @@
     section.style.display = 'block';
   });
 
-  const location = await fetchLocation(token);
-  if (location) {
-    locationInput.value = location;
+  const settings = await fetchSettings(token);
+  if (settings) {
+    datetimeInput.value = settings.event_datetime_text || '';
+    placeInput.value = settings.place_name || '';
+    mapUrlInput.value = settings.naver_map_url || '';
   }
 
-  locationForm.addEventListener('submit', async (e) => {
+  settingsForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const addr = locationInput.value.trim();
-    if (!addr) return;
+
+    const payload = {
+      event_datetime_text: datetimeInput.value.trim(),
+      place_name: placeInput.value.trim(),
+      naver_map_url: mapUrlInput.value.trim(),
+    };
+
+    if (!payload.event_datetime_text || !payload.place_name) {
+      statusEl.textContent = '행사 일시와 장소명은 필수입니다.';
+      statusEl.className = 'status-msg error';
+      return;
+    }
 
     try {
       const res = await fetch('/api/admin/location', {
@@ -41,26 +55,26 @@
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ value: addr }),
+        body: JSON.stringify(payload),
       });
 
       if (res.status === 401) {
         localStorage.removeItem('adminToken');
-        locationStatus.textContent = '세션이 만료되었습니다. 새로고침 후 다시 로그인해 주세요.';
-        locationStatus.className = 'status-msg error';
+        statusEl.textContent = '세션이 만료되었습니다. 새로고침 후 다시 로그인해 주세요.';
+        statusEl.className = 'status-msg error';
         return;
       }
 
       if (!res.ok) {
-        const payload = await safeJson(res);
-        throw new Error(payload?.error || 'failed to save location');
+        const data = await safeJson(res);
+        throw new Error(data?.error || '설정 저장 실패');
       }
 
-      locationStatus.textContent = '주소가 저장되었습니다.';
-      locationStatus.className = 'status-msg success';
+      statusEl.textContent = '행사 정보가 저장되었습니다.';
+      statusEl.className = 'status-msg success';
     } catch (err) {
-      locationStatus.textContent = err.message || '저장 실패';
-      locationStatus.className = 'status-msg error';
+      statusEl.textContent = err.message || '설정 저장 실패';
+      statusEl.className = 'status-msg error';
     }
   });
 
@@ -78,15 +92,15 @@
       });
 
       if (!res.ok) return '';
-      const payload = await res.json();
-      return payload?.token || '';
+      const data = await res.json();
+      return data?.token || '';
     } catch (err) {
       console.error(err);
       return '';
     }
   }
 
-  async function fetchLocation(authToken) {
+  async function fetchSettings(authToken) {
     try {
       const res = await fetch('/api/admin/location', {
         headers: { Authorization: `Bearer ${authToken}` },
@@ -94,15 +108,14 @@
 
       if (res.status === 401) {
         localStorage.removeItem('adminToken');
-        return '';
+        return null;
       }
 
-      if (!res.ok) return '';
-      const payload = await res.json();
-      return payload?.value || '';
+      if (!res.ok) return null;
+      return await res.json();
     } catch (err) {
       console.error(err);
-      return '';
+      return null;
     }
   }
 
