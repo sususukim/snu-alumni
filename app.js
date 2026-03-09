@@ -46,7 +46,7 @@
       });
 
       if (res.status === 409) {
-        alert('이미 신청하셨습니다.');
+        alert('이미 등록하셨습니다.');
         return;
       }
 
@@ -55,7 +55,7 @@
         throw new Error(payload?.error || '등록에 실패했습니다. 다시 시도해 주세요.');
       }
 
-      alert('확인되었습니다! 감사합니다!');
+      alert('신청 되셨습니다! 감사합니다!');
       form.style.display = 'none';
       successMessage.style.display = 'block';
       form.reset();

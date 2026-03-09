@@ -62,8 +62,10 @@ CREATE TABLE IF NOT EXISTS attendees (
 ALTER TABLE attendees ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- Duplicate prevention at DB level
--- Reason: student_id is the most stable unique identifier in this workflow.
-CREATE UNIQUE INDEX IF NOT EXISTS attendees_student_id_uidx ON attendees (student_id);
+-- Requirement: duplicate is only when attendance/student_id/department/name are all identical.
+DROP INDEX IF EXISTS attendees_student_id_uidx;
+CREATE UNIQUE INDEX IF NOT EXISTS attendees_dedupe_uidx
+ON attendees (attendance, student_id, department, name);
 
 DROP TRIGGER IF EXISTS trg_attendees_updated_at ON attendees;
 CREATE TRIGGER trg_attendees_updated_at

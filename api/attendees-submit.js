@@ -44,7 +44,10 @@ module.exports = async function handler(req, res) {
       path: 'attendees',
       query: {
         select: 'id',
+        attendance: `eq.${attendance}`,
         student_id: `eq.${studentId}`,
+        department: `eq.${department}`,
+        name: `eq.${name}`,
         limit: 1,
       },
     });
