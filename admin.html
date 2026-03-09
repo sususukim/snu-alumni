@@ -16,46 +16,65 @@
       <a href="index.html" class="back-link">메인으로</a>
     </header>
 
-    <section class="admin-section">
-      <h2>행사 정보 설정</h2>
-      <p class="section-desc">event_settings(id=1)의 행사 일시, 장소, 네이버 지도 URL을 수정합니다.</p>
-      <form id="location-form">
+    <section id="admin-login-section" class="admin-section admin-login">
+      <h2>관리자 로그인</h2>
+      <form id="admin-login-form">
         <div class="form-group">
-          <label for="datetime-input">행사 일시 텍스트</label>
-          <input type="text" id="datetime-input" placeholder="예: 2026년 5월 12일 18:00" required>
+          <label for="admin-password">비밀번호</label>
+          <input type="password" id="admin-password" autocomplete="current-password" required>
         </div>
-        <div class="form-group">
-          <label for="location-input">장소명</label>
-          <input type="text" id="location-input" placeholder="예: 여의도" required>
-        </div>
-        <div class="form-group">
-          <label for="map-url-input">네이버 지도 URL</label>
-          <input type="text" id="map-url-input" placeholder="https://map.naver.com/v5/search/...">
-        </div>
-        <button type="submit" class="btn btn-primary">설정 저장</button>
+        <button type="submit" class="btn btn-primary">로그인</button>
       </form>
-      <p id="location-status" class="status-msg"></p>
+      <p id="admin-login-status" class="status-msg"></p>
     </section>
 
-    <section class="admin-section">
-      <h2>참석자 목록</h2>
-      <div class="attendees-table-wrap">
-        <table class="attendees-table">
-          <thead>
-            <tr>
-              <th>성함</th>
-              <th>학번</th>
-              <th>학과</th>
-              <th>참석</th>
-              <th>등록일</th>
-            </tr>
-          </thead>
-          <tbody id="attendees-body">
-            <tr><td colspan="5" class="loading">로딩 중...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <div id="admin-content" style="display: none;">
+      <section class="admin-section">
+        <h2>행사 정보 설정</h2>
+        <p class="section-desc">event_settings(id=1)의 행사 제목, 일시, 장소, 네이버 지도 URL을 수정합니다.</p>
+        <form id="location-form">
+          <div class="form-group">
+            <label for="title-input">행사 제목</label>
+            <input type="text" id="title-input" placeholder="예: 동문회 참석 신청">
+          </div>
+          <div class="form-group">
+            <label for="datetime-input">행사 일시 텍스트</label>
+            <input type="text" id="datetime-input" placeholder="예: 2026년 5월 12일 18:00" required>
+          </div>
+          <div class="form-group">
+            <label for="location-input">장소명</label>
+            <input type="text" id="location-input" placeholder="예: 여의도" required>
+          </div>
+          <div class="form-group">
+            <label for="map-url-input">네이버 지도 URL</label>
+            <input type="text" id="map-url-input" placeholder="https://map.naver.com/v5/search/...">
+          </div>
+          <button type="submit" class="btn btn-primary">설정 저장</button>
+          <button type="button" id="admin-logout-btn" class="btn">로그아웃</button>
+        </form>
+        <p id="location-status" class="status-msg"></p>
+      </section>
+
+      <section class="admin-section">
+        <h2>참석자 목록</h2>
+        <div class="attendees-table-wrap">
+          <table class="attendees-table">
+            <thead>
+              <tr>
+                <th>성함</th>
+                <th>학번</th>
+                <th>학과</th>
+                <th>참석</th>
+                <th>등록일</th>
+              </tr>
+            </thead>
+            <tbody id="attendees-body">
+              <tr><td colspan="5" class="loading">로딩 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script src="admin.js"></script>

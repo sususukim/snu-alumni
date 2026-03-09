@@ -1,43 +1,71 @@
-﻿const { assertSupabaseServerEnv, supabaseRest } = require('./_lib/supabaseRest');
+﻿const { json, methodNotAllowed, readJsonBody, serverError } = require('./_lib/http');
+const { assertSupabaseServerEnv, supabaseRest } = require('./_lib/supabaseRest');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+    methodNotAllowed(res, ['POST']);
     return;
   }
 
-  const env = assertSupabaseServerEnv(res);
-  if (!env) return;
+  const envResult = assertSupabaseServerEnv();
+  if (!envResult.ok) {
+    json(res, 500, { ok: false, error: envResult.error });
+    return;
+  }
+
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    json(res, 400, { ok: false, error: 'Invalid JSON body' });
+    return;
+  }
+
+  const attendance = String(body?.attendance || '').trim();
+  const studentId = String(body?.student_id || '').trim();
+  const department = String(body?.department || '').trim();
+  const name = String(body?.name || '').trim();
+
+  if (!attendance || !studentId || !department || !name) {
+    json(res, 400, {
+      ok: false,
+      error: 'attendance, student_id, department, name are required',
+    });
+    return;
+  }
+
+  if (!['참석', '불참', '미정'].includes(attendance)) {
+    json(res, 400, { ok: false, error: 'attendance is invalid' });
+    return;
+  }
 
   try {
-    const attendance = (req.body?.attendance ? String(req.body.attendance) : '').trim();
-    const studentId = (req.body?.student_id ? String(req.body.student_id) : '').trim();
-    const department = (req.body?.department ? String(req.body.department) : '').trim();
-    const name = (req.body?.name ? String(req.body.name) : '').trim();
+    const dup = await supabaseRest(envResult.env, {
+      path: 'attendees',
+      query: {
+        select: 'id',
+        student_id: `eq.${studentId}`,
+        limit: 1,
+      },
+    });
 
-    if (!attendance || !studentId || !department || !name) {
-      res.status(400).json({ error: 'attendance, student_id, department, name are required' });
+    if (!dup.ok) {
+      json(res, dup.status || 500, {
+        ok: false,
+        error: 'Failed to check duplicate attendee',
+      });
       return;
     }
 
-    const dupPath = `attendees?select=id&student_id=eq.${encodeURIComponent(studentId)}&department=eq.${encodeURIComponent(department)}&name=eq.${encodeURIComponent(name)}&limit=1`;
-    const dupRes = await supabaseRest(dupPath, { env });
-
-    if (!dupRes.ok) {
-      const text = await dupRes.text();
-      res.status(dupRes.status).json({ error: text || 'Failed to check duplicate attendee' });
+    const dupRows = Array.isArray(dup.data) ? dup.data : [];
+    if (dupRows.length > 0) {
+      json(res, 409, { ok: false, error: 'already_exists' });
       return;
     }
 
-    const dupRows = await dupRes.json();
-    if (Array.isArray(dupRows) && dupRows.length > 0) {
-      res.status(409).json({ error: 'already_exists' });
-      return;
-    }
-
-    const insertRes = await supabaseRest('attendees', {
-      env,
+    const insert = await supabaseRest(envResult.env, {
       method: 'POST',
+      path: 'attendees',
       headers: { Prefer: 'return=minimal' },
       body: [{
         attendance,
@@ -47,14 +75,22 @@ module.exports = async function handler(req, res) {
       }],
     });
 
-    if (!insertRes.ok) {
-      const text = await insertRes.text();
-      res.status(insertRes.status).json({ error: text || 'Failed to insert attendee' });
+    if (!insert.ok) {
+      const maybeMsg = typeof insert.data === 'object' ? insert.data?.message : '';
+      if (insert.status === 409 || String(maybeMsg || '').includes('duplicate key')) {
+        json(res, 409, { ok: false, error: 'already_exists' });
+        return;
+      }
+
+      json(res, insert.status || 500, {
+        ok: false,
+        error: 'Failed to submit attendee',
+      });
       return;
     }
 
-    res.status(200).json({ ok: true });
+    json(res, 200, { ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to submit attendee' });
+    serverError(res, 'Failed to submit attendee', err.message);
   }
 };

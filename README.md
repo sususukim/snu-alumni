@@ -1,46 +1,89 @@
-﻿# SNU Alumni Attendance
+﻿# SNU Alumni Attendance Web App
 
-정적 웹페이지 + Supabase 기반 참석 신청 서비스입니다.
+서울대 동문회 참석 여부를 수집하는 웹앱입니다.
 
-## 보안 변경 사항 (2026-03-08)
-- `config.js` 제거
-- Supabase 키는 코드에 하드코딩하지 않고 Vercel 환경변수에서 주입
-- 관리자 페이지는 `/api/admin/login` 비밀번호 인증 후 접근
-- 관리자 데이터 조회/수정은 서버 API(`service_role` 사용) 경유
+- 사용자 페이지: `/`
+- 관리자 페이지: `/admin`
+- 배포: Vercel
+- DB: Supabase (서버 API에서 service_role 사용)
 
-## Vercel 환경변수
-아래 값을 Vercel Project Settings > Environment Variables 에 등록하세요.
+## Architecture
 
-- `SUPABASE_URL`: 예) `https://xxxxx.supabase.co`
-- `SUPABASE_ANON_KEY`: Supabase publishable/anon key
-- `SUPABASE_SERVICE_ROLE_KEY`: Supabase service_role key (절대 공개 금지)
-- `ADMIN_PASSWORD`: 관리자 로그인 비밀번호
-- `ADMIN_SESSION_SECRET`: 세션 서명용 랜덤 긴 문자열
+### Frontend
+- `index.html` + `app.js`: 참석 신청, 행사 정보 표시
+- `admin.html` + `admin.js`: 관리자 로그인, 행사 정보 수정, 참석자 목록 조회
 
-권장: 값 등록 후 기존 노출된 비밀키가 있었다면 Supabase에서 즉시 Rotate 하세요.
+### Serverless API (CommonJS)
+- `POST /api/attendees-submit`
+- `GET /api/event-settings`
+- `POST /api/admin/login`
+- `GET|PUT /api/admin/location`
+- `GET /api/admin/attendees`
+- `GET /api/public-config` (deprecated, 410 반환)
 
-## DB 초기화
-`supabase/schema.sql` 파일은 "설명서"가 아니라 실제 DB 생성 SQL입니다.
-반드시 Supabase Dashboard > SQL Editor 에서 실행해야 테이블이 생성됩니다.
+### Security model
+- 브라우저에서 Supabase 직접 호출하지 않음
+- `SUPABASE_SERVICE_ROLE_KEY`는 서버 함수에서만 사용
+- 관리자 인증은 `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` 기반 토큰 검증
 
-실행 대상:
-- `event_settings`
-- `attendees`
-- RLS 및 정책
+## Required Environment Variables (Vercel)
 
-## 로컬 파일 구조 핵심
-- `index.html`, `app.js`: 사용자 신청 페이지
-- `admin.html`, `admin.js`: 관리자 페이지 UI
-- `api/public-config.js`: 브라우저용 공개 설정 제공
-- `api/admin/login.js`: 관리자 로그인
-- `api/admin/location.js`: 장소 조회/수정 (인증 필요)
-- `api/admin/attendees.js`: 참석자 목록 조회 (인증 필요)
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_PASSWORD`
+- `ADMIN_SESSION_SECRET`
 
-## 배포
-1. 변경 커밋
-2. `git push origin <branch>`
-3. Vercel 자동 배포 확인
+Optional:
+- `SUPABASE_ANON_KEY` (현재 사용하지 않음)
 
-## 주의
-- 프론트에 `service_role`를 넣으면 안 됩니다.
-- `anon/publishable` 키는 클라이언트에 노출돼도 되지만, RLS 정책은 반드시 최소권한으로 유지하세요.
+## Database setup
+
+1. Supabase Dashboard > SQL Editor 열기
+2. `supabase/schema.sql` 실행
+3. 필요하면 루트 `schema.sql`도 같은 내용(백업용)
+
+### DB design notes
+- `event_settings`: 단일 row(`id = 1`) 설정 테이블
+- `attendees`: `student_id` 유니크 인덱스로 중복 신청 DB 레벨 차단
+- RLS는 `service_role`만 허용하는 최소권한 정책
+
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+`vercel dev`로 API + 정적 페이지를 함께 테스트합니다.
+
+## Production deploy
+
+```bash
+git add .
+git commit -m "production hardening"
+git push origin main
+```
+
+Vercel Git 연동이면 자동 배포됩니다.
+
+## Test checklist
+
+1. 메인 페이지 접속
+2. 행사 정보 로드
+3. 참석 신청 저장
+4. 같은 학번 재신청 시 409 처리(중복 안내)
+5. 관리자 로그인
+6. 행사 정보 조회/수정
+7. 참석자 목록 조회
+8. 토큰 만료/비정상 토큰일 때 401 처리 및 재로그인 유도
+
+## Troubleshooting
+
+### `SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing`
+- Vercel 환경변수 이름 오타 여부 확인
+- Production 환경 체크 여부 확인
+- 저장 후 Redeploy 했는지 확인
+
+### 관리자 로그인은 되는데 데이터가 안 보임
+- `supabase/schema.sql`이 실제 실행되었는지 확인
+- `attendees`, `event_settings` 테이블/컬럼 확인

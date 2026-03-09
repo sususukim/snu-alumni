@@ -1,8 +1,9 @@
 ﻿const { signPayload, safeEqual } = require('../_lib/adminAuth');
+const { json, methodNotAllowed, readJsonBody, serverError } = require('../_lib/http');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+    methodNotAllowed(res, ['POST']);
     return;
   }
 
@@ -10,21 +11,36 @@ module.exports = async function handler(req, res) {
   const secret = process.env.ADMIN_SESSION_SECRET;
 
   if (!adminPassword || !secret) {
-    res.status(500).json({ error: 'ADMIN_PASSWORD or ADMIN_SESSION_SECRET is missing' });
+    json(res, 500, {
+      ok: false,
+      error: 'ADMIN_PASSWORD or ADMIN_SESSION_SECRET is missing',
+    });
     return;
   }
 
-  const provided = (req.body && req.body.password) || '';
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    json(res, 400, { ok: false, error: 'Invalid JSON body' });
+    return;
+  }
+
+  const provided = String(body?.password || '');
   if (!safeEqual(adminPassword, provided)) {
-    res.status(401).json({ error: 'Invalid password' });
+    json(res, 401, { ok: false, error: 'Invalid password' });
     return;
   }
 
-  const payload = {
-    role: 'admin',
-    exp: Date.now() + 1000 * 60 * 60 * 8,
-  };
+  try {
+    const payload = {
+      role: 'admin',
+      exp: Date.now() + 1000 * 60 * 60 * 8,
+    };
 
-  const token = signPayload(payload, secret);
-  res.status(200).json({ token });
+    const token = signPayload(payload, secret);
+    json(res, 200, { ok: true, token, expires_at: payload.exp });
+  } catch (err) {
+    serverError(res, 'Failed to create session token', err.message);
+  }
 };

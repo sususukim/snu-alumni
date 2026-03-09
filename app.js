@@ -9,7 +9,6 @@
   const datetimeEl = document.getElementById('eventDatetime');
   const locationEl = document.getElementById('eventLocation');
   const mapLink = document.getElementById('mapLink');
-  const locationMap = document.getElementById('locationMap');
 
   const defaults = {
     eventTitle: '동문회 참석 신청',
@@ -35,9 +34,7 @@
 
     if (!formData.attendance || !formData.student_id || !formData.department || !formData.name) {
       alert('모든 항목을 입력해 주세요.');
-      submitBtn.disabled = false;
-      btnText.style.display = 'inline';
-      btnLoading.style.display = 'none';
+      resetSubmitState();
       return;
     }
 
@@ -66,9 +63,7 @@
       console.error(err);
       alert(err.message || '등록에 실패했습니다. 다시 시도해 주세요.');
     } finally {
-      submitBtn.disabled = false;
-      btnText.style.display = 'inline';
-      btnLoading.style.display = 'none';
+      resetSubmitState();
     }
   });
 
@@ -77,15 +72,15 @@
       const res = await fetch('/api/event-settings', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load event settings');
 
-      const data = await res.json();
+      const payload = await res.json();
       applyEventSettings({
-        eventTitle: data?.event_title || defaults.eventTitle,
-        eventDatetime: data?.event_datetime_text || defaults.eventDatetime,
-        placeName: data?.place_name || defaults.placeName,
-        mapUrl: data?.naver_map_url || '',
+        eventTitle: payload?.event_title || defaults.eventTitle,
+        eventDatetime: payload?.event_datetime_text || defaults.eventDatetime,
+        placeName: payload?.place_name || defaults.placeName,
+        mapUrl: payload?.naver_map_url || defaults.mapUrl,
       });
     } catch (err) {
-      console.error('Failed to load event info:', err);
+      console.error('Failed to load event settings:', err);
       applyEventSettings(defaults);
     }
   }
@@ -95,39 +90,37 @@
     datetimeEl.textContent = settings.eventDatetime;
     locationEl.textContent = settings.placeName;
 
-    const mapUrl = (settings.mapUrl || '').trim();
+    const mapUrl = safeMapUrl(settings.mapUrl);
     if (!mapUrl) {
       mapLink.style.display = 'none';
       mapLink.removeAttribute('href');
-      locationMap.style.display = 'none';
-      locationMap.innerHTML = '';
       return;
     }
 
     mapLink.href = mapUrl;
     mapLink.style.display = 'inline-block';
+  }
 
-    locationMap.innerHTML = `
-      <iframe
-        src="${escapeHtmlAttr(mapUrl)}"
-        width="100%"
-        height="200"
-        frameborder="0"
-        allowfullscreen
-        style="border-radius: 12px; border: none; margin-top: 8px;"
-        loading="lazy"
-      ></iframe>
-    `;
-    locationMap.style.display = 'block';
+  function resetSubmitState() {
+    submitBtn.disabled = false;
+    btnText.style.display = 'inline';
+    btnLoading.style.display = 'none';
   }
 });
 
-function escapeHtmlAttr(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
+function safeMapUrl(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+
+  try {
+    const parsed = new URL(raw);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return '';
+    }
+    return parsed.toString();
+  } catch {
+    return '';
+  }
 }
 
 async function safeJson(res) {

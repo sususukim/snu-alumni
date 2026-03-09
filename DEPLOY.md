@@ -1,28 +1,36 @@
-﻿# Deploy Guide (Vercel + Supabase)
+﻿# DEPLOY GUIDE
 
-## 1) Supabase DB 생성
-Supabase Dashboard > SQL Editor 에서 `supabase/schema.sql` 전체 실행
+## 1) Supabase schema apply
+- Supabase SQL Editor에서 `supabase/schema.sql` 실행
 
-## 2) Vercel 환경변수 등록
-Project Settings > Environment Variables
+## 2) Vercel env vars
+Vercel Project > Settings > Environment Variables
 
+필수:
 - `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ADMIN_PASSWORD`
 - `ADMIN_SESSION_SECRET`
 
-## 3) Git Push
+선택:
+- `SUPABASE_ANON_KEY` (현재 미사용)
+
+모든 변수는 `Production`, `Preview`, `Development`에 적용 권장.
+
+## 3) Deploy
 ```bash
 git add .
-git commit -m "secure env config + admin auth api"
+git commit -m "production ready hardening"
 git push origin main
 ```
 
-## 4) 배포 확인
-- 사용자 페이지: `/`
-- 관리자 페이지: `/admin` (진입 시 비밀번호 프롬프트)
+## 4) Verify after deploy
+- `/` 접속
+- 참석 신청 저장
+- 동일 학번 재신청 시 중복 차단
+- `/admin` 로그인 및 목록/설정 확인
 
-## 5) 보안 체크
-- `service_role` 키는 절대 클라이언트 코드/공개 repo에 올리지 않기
-- 기존에 노출한 비밀키가 있으면 Supabase에서 Rotate
+## 5) If something breaks
+- Vercel Deployment Logs 확인
+- `/api/event-settings` 직접 접속해서 JSON 응답 확인
+- `/api/admin/login`은 POST만 허용됨(브라우저 GET 테스트 X)

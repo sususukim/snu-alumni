@@ -1,0 +1,13 @@
+{
+  "name": "snu-alumni-attendance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vercel dev",
+    "check": "node --check app.js && node --check admin.js && node --check api/event-settings.js && node --check api/attendees-submit.js && node --check api/admin/login.js && node --check api/admin/location.js && node --check api/admin/attendees.js"
+  },
+  "devDependencies": {
+    "vercel": "^39.1.0"
+  }
+}
